@@ -3,8 +3,9 @@ import numpy as np
 from scipy.optimize import minimize
 import os
 import csv
+import matplotlib.pyplot as plt
 
-folder_path = '/Users/ayala/Downloads/PPS-Experiment1-20261002T201620Z-1-001/PPS-Experiment1'
+folder_path = '/Users/hagrid/Desktop/ML/PPS/PPS1 raw data'
 
 min_reaction_time = 0.01
 max_reaction_time = 3
@@ -41,7 +42,7 @@ def objective(params, ymin, ymax, x, y):
     rmse = np.sqrt(np.mean((y - y_pred) ** 2))  # Mean Squared Error
     return rmse
 
-results = [['Subject','Social xc','Social b', "SocialMean_03", "SocialMean_06", "SocialMean_1", "SocialMean_13", "SocialMean_16", 'Social RMSE','Non-social Xc','Non-social b', "NonSocialMean_03", "NonSocialMean_06", "NonSocialMean_1", "NonSocialMean_13", "NonSocialMean_16", 'Non-social RMSE']]
+results = [['Subject','Social xc','Social b','Social RMSE', "SocialMean_03", "SocialMean_06", "SocialMean_1", "SocialMean_13", "SocialMean_16", 'Non-social Xc','Non-social b', 'Non-social RMSE',"NonSocialMean_03", "NonSocialMean_06", "NonSocialMean_1", "NonSocialMean_13", "NonSocialMean_16"]]
 
 # Loop through all files in the folder
 for filename in os.listdir(folder_path):
@@ -140,12 +141,56 @@ for filename in os.listdir(folder_path):
                 best_rmse2 = result2.fun
                 xc2, b2 = result2.x
 
-        results.append([filename.split()[0], xc1, b1, mean1_03, mean1_06, mean1_1, mean1_13, mean1_16, best_rmse1,xc2, b2, mean2_03, mean2_06, mean2_1, mean2_13, mean2_16, best_rmse2])
+        results.append([filename.split(" ")[0], xc1, b1, best_rmse1,mean1_03, mean1_06, mean1_1, mean1_13, mean1_16, xc2, b2, best_rmse2,mean2_03, mean2_06, mean2_1, mean2_13, mean2_16, ])
         file.close()
 
-csv_file_path = '/Users/ayala/Downloads/test output/PPS1 results.csv'
+csv_file_path = '/Users/hagrid/Desktop/ML/PPS/PPS1 results 10.6.26.csv'
 
 # Write the results to a CSV file
 with open(csv_file_path, mode='w', newline='') as file:
     writer = csv.writer(file)
     writer.writerows(results)
+
+rows = results[1:]  # drop header
+social = np.array([r[3:8] for r in rows], dtype=float)  # subjects x 5 distances
+nonsocial = np.array([r[11:16] for r in rows], dtype=float)
+
+
+def group_stats(data):
+    n = np.sum(~np.isnan(data), axis=0)
+    mean = np.nanmean(data, axis=0)
+    sem = np.nanstd(data, axis=0, ddof=1) / np.sqrt(n)
+    return mean, sem
+
+
+def fit_sigmoid(x, y):
+    ymin, ymax = y.min(), y.max()
+    best = None
+    for g in initial_guess:
+        res = minimize(objective, g, args=(ymin, ymax, x, y), method='nelder-mead', bounds=bounds)
+        if res.success and (best is None or res.fun < best.fun):
+            best = res
+    return best.x, ymin, ymax
+
+
+soc_mean, soc_sem = group_stats(social)
+non_mean, non_sem = group_stats(nonsocial)
+
+fig, ax = plt.subplots(figsize=(7, 5))
+x_fine = np.linspace(x_data.min(), x_data.max(), 200)
+
+for mean, sem, label, color in [(soc_mean, soc_sem, 'Social', 'tab:red'),
+                                (non_mean, non_sem, 'Non-social', 'tab:blue')]:
+    ax.errorbar(x_data, mean, yerr=sem, fmt='o', color=color, capsize=4, label=f'{label} (mean ± SEM)')
+    (xc, b), ymin, ymax = fit_sigmoid(x_data, mean)  # sigmoid fit to group means
+    ax.plot(x_fine, sigmoid(x_fine, xc, b, ymin, ymax), '--', color=color, alpha=0.7)
+
+ax.set_xlabel('Distance')
+ax.set_ylabel('Reaction time (s)')
+ax.set_title(f'Group PPS (N = {len(rows)})')
+ax.set_xticks(x_data)
+ax.legend(frameon=False)
+ax.spines[['top', 'right']].set_visible(False)
+
+plt.tight_layout()
+plt.show()
