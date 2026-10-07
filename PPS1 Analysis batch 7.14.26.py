@@ -4,6 +4,7 @@ from scipy.optimize import minimize
 import os
 import csv
 import matplotlib.pyplot as plt
+from datetime import datetime
 
 folder_path = '/Users/hagrid/Desktop/ML/PPS/PPS1 raw data'
 
@@ -20,9 +21,11 @@ def mean_calculate(extract, condition, distance):
     if error > max_reaction_time:
         error = max_reaction_time
 
+    anticipatory_errors=0
     for i in new_list[:, 2]:
         if i > max_anticipatory_time or i < min_anticipatory_time:
             print("*** Potential Anticipatory Error ***")
+            anticipatory_errors += 1
 
     new_list = new_list[new_list[:, 2] >= min_reaction_time]
     new_list = new_list[new_list[:, 2] <= error]
@@ -30,7 +33,7 @@ def mean_calculate(extract, condition, distance):
     if len(new_list) == 0:
         print (f"No valid observations for condition={condition}, distance={distance}")
 
-    return np.average(new_list[:, 2])
+    return np.average(new_list[:, 2]),anticipatory_errors
 
 def sigmoid(x, xc, b, ymin, ymax):
     return ((ymin + ymax * np.exp((x - xc) / b)) / (1 + np.exp((x - xc) / b)))
@@ -42,7 +45,7 @@ def objective(params, ymin, ymax, x, y):
     rmse = np.sqrt(np.mean((y - y_pred) ** 2))  # Mean Squared Error
     return rmse
 
-results = [['Subject','Social xc','Social b','Social RMSE', "SocialMean_03", "SocialMean_06", "SocialMean_1", "SocialMean_13", "SocialMean_16", 'Non-social Xc','Non-social b', 'Non-social RMSE',"NonSocialMean_03", "NonSocialMean_06", "NonSocialMean_1", "NonSocialMean_13", "NonSocialMean_16"]]
+results = [['Subject','Anticipatory errors','Social xc','Social b','Social RMSE', "SocialMean_03", "SocialMean_06", "SocialMean_1", "SocialMean_13", "SocialMean_16", 'Non-social Xc','Non-social b', 'Non-social RMSE',"NonSocialMean_03", "NonSocialMean_06", "NonSocialMean_1", "NonSocialMean_13", "NonSocialMean_16"]]
 
 # Loop through all files in the folder
 for filename in os.listdir(folder_path):
@@ -97,17 +100,17 @@ for filename in os.listdir(folder_path):
             first_index = np.where(extract == 0)[0][-4]
         extract = extract[first_index:last_index, :]
 
-        mean1_03 = mean_calculate(extract, 1, 0.3, )
-        mean1_06 = mean_calculate(extract, 1, 0.6)
-        mean1_1 = mean_calculate(extract, 1, 1)
-        mean1_13 = mean_calculate(extract, 1, 1.3)
-        mean1_16 = mean_calculate(extract, 1, 1.6)
+        mean1_03,anticipatory_error1_03 = mean_calculate(extract, 1, 0.3, )
+        mean1_06,anticipatory_error1_06 = mean_calculate(extract, 1, 0.6)
+        mean1_1,anticipatory_error1_1 = mean_calculate(extract, 1, 1)
+        mean1_13,anticipatory_error1_13 = mean_calculate(extract, 1, 1.3)
+        mean1_16,anticipatory_error1_16 = mean_calculate(extract, 1, 1.6)
 
-        mean2_03 = mean_calculate(extract, 2, 0.3)
-        mean2_06 = mean_calculate(extract, 2, 0.6)
-        mean2_1 = mean_calculate(extract, 2, 1)
-        mean2_13 = mean_calculate(extract, 2, 1.3)
-        mean2_16 = mean_calculate(extract, 2, 1.6)
+        mean2_03,anticipatory_error2_03 = mean_calculate(extract, 2, 0.3)
+        mean2_06,anticipatory_error2_06 = mean_calculate(extract, 2, 0.6)
+        mean2_1,anticipatory_error2_1 = mean_calculate(extract, 2, 1)
+        mean2_13,anticipatory_error2_13 = mean_calculate(extract, 2, 1.3)
+        mean2_16,anticipatory_error2_16 = mean_calculate(extract, 2, 1.6)
 
         x_data = np.array([0.3, 0.6, 1, 1.3, 1.6])  # Distances (D1 to D5)
         y1_data = np.array([mean1_03, mean1_06, mean1_1, mean1_13, mean1_16])  # Reaction Times
@@ -141,10 +144,13 @@ for filename in os.listdir(folder_path):
                 best_rmse2 = result2.fun
                 xc2, b2 = result2.x
 
-        results.append([filename.split(" ")[0], xc1, b1, best_rmse1,mean1_03, mean1_06, mean1_1, mean1_13, mean1_16, xc2, b2, best_rmse2,mean2_03, mean2_06, mean2_1, mean2_13, mean2_16, ])
+        results.append([filename, anticipatory_error1_03+anticipatory_error1_06+anticipatory_error1_1+anticipatory_error1_13+anticipatory_error1_16+anticipatory_error2_03+anticipatory_error2_06+anticipatory_error2_1+anticipatory_error2_13+anticipatory_error2_16,
+                        xc1, b1, best_rmse1,mean1_03, mean1_06, mean1_1, mean1_13, mean1_16, xc2, b2, best_rmse2,mean2_03, mean2_06, mean2_1, mean2_13, mean2_16, ])
         file.close()
 
-csv_file_path = '/Users/hagrid/Desktop/ML/PPS/PPS1 results 10.6.26.csv'
+now = datetime.now()
+timestamp = now.strftime("%Y-%m-%d %H-%M")
+csv_file_path = f'/Users/hagrid/Desktop/ML/PPS/PPS1 results {timestamp}.csv'
 
 # Write the results to a CSV file
 with open(csv_file_path, mode='w', newline='') as file:
@@ -152,8 +158,8 @@ with open(csv_file_path, mode='w', newline='') as file:
     writer.writerows(results)
 
 rows = results[1:]  # drop header
-social = np.array([r[3:8] for r in rows], dtype=float)  # subjects x 5 distances
-nonsocial = np.array([r[11:16] for r in rows], dtype=float)
+social = np.array([r[5:10] for r in rows], dtype=float)  # subjects x 5 distances
+nonsocial = np.array([r[13:18] for r in rows], dtype=float)
 
 
 def group_stats(data):
