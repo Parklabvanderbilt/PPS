@@ -45,7 +45,7 @@ def objective(params, ymin, ymax, x, y):
     rmse = np.sqrt(np.mean((y - y_pred) ** 2))  # Mean Squared Error
     return rmse
 
-results = [['Subject','Anticipatory errors','Social xc','Social b','Social RMSE', "SocialMean_03", "SocialMean_06", "SocialMean_1", "SocialMean_13", "SocialMean_16", 'Non-social Xc','Non-social b', 'Non-social RMSE',"NonSocialMean_03", "NonSocialMean_06", "NonSocialMean_1", "NonSocialMean_13", "NonSocialMean_16"]]
+results = [['Subject','Anticipatory errors','Social xc','Social b','Social RMSE', "SocialMean_03", "SocialMean_06", "SocialMean_1", "SocialMean_13", "SocialMean_16", 'Non-social xc','Non-social b', 'Non-social RMSE',"NonSocialMean_03", "NonSocialMean_06", "NonSocialMean_1", "NonSocialMean_13", "NonSocialMean_16"]]
 
 # Loop through all files in the folder
 for filename in os.listdir(folder_path):
