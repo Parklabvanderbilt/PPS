@@ -3,6 +3,9 @@ import numpy as np
 import statistics
 import os
 import csv
+from datetime import datetime
+
+folder_path = '/Users/hagrid/Desktop/ML/PPS/PPS3 raw data'
 
 def extract(file):
     with open(file, 'r', errors='ignore') as file:
@@ -35,8 +38,6 @@ def get_stats(file):
 
     return mean, std
 
-
-folder_path = '/Users/lebovija/Downloads/PPS3'
 results = []
 
 # Find all participants who have ANY of the four trial files
@@ -81,8 +82,9 @@ for participant in sorted(participants):
         std_pt
     ])
 
-
-csv_file_path = '/Users/lebovija/Downloads/PPS3/IPD results.csv'
+now = datetime.now()
+timestamp = now.strftime("%Y-%m-%d %H-%M")
+csv_file_path = f'/Users/hagrid/Desktop/ML/PPS/PPS3 results {timestamp}.csv'
 
 with open(csv_file_path, mode='w', newline='') as file:
 
