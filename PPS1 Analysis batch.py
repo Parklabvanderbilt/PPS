@@ -75,7 +75,7 @@ for filename in os.listdir(folder_path):
                 initial_list.append(float(match))
             elif i % 3 == 0:
                 initial_list.append(float(match))
-                if bracketed_text[x] == 'MALE THROWER' or bracketed_text[x] == 'Spiked Ball':
+                if 'MALE THROWER' in bracketed_text[x] or 'Spiked Ball' in bracketed_text[x]:
                     initial_list.append(1)
                 else:
                     initial_list.append(2)
